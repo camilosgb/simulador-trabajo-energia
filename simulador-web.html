@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Trabajo y Energía - Tema #6</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 450px;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .canvas-section {
+            background: #f0f8ff;
+            border: 3px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .canvas-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        #mainCanvas {
+            width: 100%;
+            height: 450px;
+            background: #e8f4f8;
+            border-radius: 5px;
+            cursor: crosshair;
+        }
+        
+        .canvas-options {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .control-panel {
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .control-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            color: #444;
+        }
+        
+        .input-group {
+            margin-bottom: 12px;
+        }
+        
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+        
+        .slider-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .btn-start {
+            background: #4CAF50;
+        }
+        
+        .btn-pause {
+            background: #FF9800;
+        }
+        
+        .btn-reset {
+            background: #2196F3;
+        }
+        
+        .btn-export {
+            background: #9C27B0;
+        }
+        
+        .energy-bars {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .energy-bar-item {
+            margin-bottom: 12px;
+        }
+        
+        .energy-bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        .energy-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .energy-bar-fill {
+            height: 100%;
+            transition: width 0.3s;
+            border-radius: 10px;
+        }
+        
+        .ec-fill { background: #FF5722; }
+        .ep-fill { background: #2196F3; }
+        .et-fill { background: #4CAF50; }
+        
+        .chart-container {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            height: 250px;
+        }
+        
+        canvas.chart {
+            max-height: 220px;
+        }
+        
+        .info-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Simulador de Trabajo y Energía</h1>
+            <p>Tema #6: Trabajo y energía en sistemas mecánicos | Elementos Computacionales</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Canvas Section -->
+            <div class="canvas-section">
+                <div class="canvas-title">📊 Visualización de la Trayectoria</div>
+                <canvas id="mainCanvas"></canvas>
+                <div class="canvas-options">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showVectors" checked>
+                        <label for="showVectors">Mostrar vectores de fuerza</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showGrid" checked>
+                        <label for="showGrid">Mostrar cuadrícula</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Controls Section -->
+            <div class="controls-section">
+                <!-- Parameters -->
+                <div class="control-panel">
+                    <div class="control-title">⚙️ Parámetros de Simulación</div>
+                    
+                    <div class="input-group">
+                        <label>Trayectoria:</label>
+                        <select id="trajectory">
+                            <option value="recta">Recta</option>
+                            <option value="arco" selected>Arco Circular</option>
+                            <option value="parabola">Parábola</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Punto B - x (m):</label>
+                        <input type="number" id="xB" value="10" step="0.5">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Punto B - y (m):</label>
+                        <input type="number" id="yB" value="0" step="0.5">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Masa (kg):</label>
+                        <input type="number" id="mass" value="2" step="0.1" min="0.1">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Tiempo total (s):</label>
+                        <input type="number" id="totalTime" value="5" step="0.5" min="0.5">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Pasos:</label>
+                        <input type="number" id="steps" value="500" step="50" min="50">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Disipación (b):</label>
+                        <div class="slider-container">
+                            <input type="range" id="bSlider" min="0" max="2" step="0.1" value="0.5">
+                            <span class="slider-value" id="bValue">0.5</span>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Velocidad de animación:</label>
+                        <div class="slider-container">
+                            <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+                            <span class="slider-value" id="speedValue">1.0x</span>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons">
+                        <button class="btn btn-start" id="btnStart">▶ Iniciar</button>
+                        <button class="btn btn-pause" id="btnPause">⏸ Pausar</button>
+                        <button class="btn btn-reset" id="btnReset">🔄 Preparar</button>
+                        <button class="btn btn-export" id="btnExport">💾 Exportar CSV</button>
+                    </div>
+                </div>
+                
+                <!-- Energy Bars -->
+                <div class="energy-bars">
+                    <div class="control-title">⚡ Indicadores de Energía</div>
+                    
+                    <div class="energy-bar-item">
+                        <div class="energy-bar-label">
+                            <span>Cinética:</span>
+                            <span id="ecValue">0.00 J</span>
+                        </div>
+                        <div class="energy-bar">
+                            <div class="energy-bar-fill ec-fill" id="ecBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="energy-bar-item">
+                        <div class="energy-bar-label">
+                            <span>Potencial:</span>
+                            <span id="epValue">0.00 J</span>
+                        </div>
+                        <div class="energy-bar">
+                            <div class="energy-bar-fill ep-fill" id="epBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="energy-bar-item">
+                        <div class="energy-bar-label">
+                            <span>Total:</span>
+                            <span id="etValue">0.00 J</span>
+                        </div>
+                        <div class="energy-bar">
+                            <div class="energy-bar-fill et-fill" id="etBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Info Box -->
+                <div class="info-box">
+                    <strong>💡 Instrucciones:</strong><br>
+                    1. Configura los parámetros deseados<br>
+                    2. Presiona "Preparar" para calcular la trayectoria<br>
+                    3. Presiona "Iniciar" para comenzar la animación<br>
+                    4. Usa "Exportar CSV" para descargar los datos
+                </div>
+                
+                <!-- Charts -->
+                <div class="chart-container">
+                    <canvas id="energyChart" class="chart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="workChart" class="chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        const g = 9.81;
+        let canvas, ctx;
+        let xA = 0, yA = 5;
+        let xB = 10, yB = 0;
+        let mass = 2.0;
+        let totalTime = 5.0;
+        let steps = 500;
+        let b = 0.5;
+        let animSpeed = 1.0;
+        
+        let xs, ys, dxt, dyt, vxs, vys, vs, times;
+        let wgCum, wdCum, ecArr, epArr, etArr, fxArr, fyArr;
+        
+        let idx = 0;
+        let running = false;
+        let animationFrame;
+        let lastTime = 0;
+        
+        let showVectors = true;
+        let showGrid = true;
+        
+        const scaleX = 50;
+        const scaleY = 50;
+        const offsetX = 50;
+        const offsetY = 100;
+        
+        let energyChart, workChart;
+        
+        // Inicialización
+        window.onload = function() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Ajustar tamaño del canvas
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Event listeners
+            document.getElementById('bSlider').addEventListener('input', function() {
+                b = parseFloat(this.value);
+                document.getElementById('bValue').textContent = b.toFixed(1);
+            });
+            
+            document.getElementById('speedSlider').addEventListener('input', function() {
+                animSpeed = parseFloat(this.value);
+                document.getElementById('speedValue').textContent = animSpeed.toFixed(1) + 'x';
+            });
+            
+            document.getElementById('showVectors').addEventListener('change', function() {
+                showVectors = this.checked;
+                drawScene();
+            });
+            
+            document.getElementById('showGrid').addEventListener('change', function() {
+                showGrid = this.checked;
+                drawScene();
+            });
+            
+            document.getElementById('btnStart').addEventListener('click', startSim);
+            document.getElementById('btnPause').addEventListener('click', pauseSim);
+            document.getElementById('btnReset').addEventListener('click', prepareSim);
+            document.getElementById('btnExport').addEventListener('click', exportCSV);
+            
+            // Inicializar gráficas
+            initCharts();
+            
+            // Preparar simulación inicial
+            prepareSim();
+        };
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth - 30;
+            canvas.height = 450;
+            drawScene();
+        }
+        
+        function initCharts() {
+            // Gráfica de energías
+            const energyCtx = document.getElementById('energyChart').getContext('2d');
+            energyChart = new Chart(energyCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'E. Cinética',
+                            data: [],
+                            borderColor: '#FF5722',
+                            backgroundColor: 'rgba(255, 87, 34, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'E. Potencial',
+                            data: [],
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'E. Total',
+                            data: [],
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Energías vs Tiempo'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tiempo (s)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Energía (J)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfica de trabajo
+            const workCtx = document.getElementById('workChart').getContext('2d');
+            workChart = new Chart(workCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'W gravedad',
+                            data: [],
+                            borderColor: '#FF9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'W disipativo',
+                            data: [],
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'W total',
+                            data: [],
+                            borderColor: '#9C27B0',
+                            backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Trabajo Acumulado vs Tiempo'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tiempo (s)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Trabajo (J)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function prepareSim() {
+            pauseSim();
+            
+            // Leer parámetros
+            try {
+                xB = parseFloat(document.getElementById('xB').value);
+                yB = parseFloat(document.getElementById('yB').value);
+                mass = parseFloat(document.getElementById('mass').value);
+                totalTime = parseFloat(document.getElementById('totalTime').value);
+                steps = parseInt(document.getElementById('steps').value);
+                b = parseFloat(document.getElementById('bSlider').value);
+                
+                if (mass <= 0 || totalTime <= 0 || steps < 10) {
+                    alert('Error: Parámetros inválidos. Verifica masa > 0, tiempo > 0, pasos >= 10.');
+                    return;
+                }
+            } catch(ex) {
+                alert('Error al leer parámetros.');
+                return;
+            }
+            
+            // Inicializar arrays
+            xs = new Array(steps + 1);
+            ys = new Array(steps + 1);
+            dxt = new Array(steps + 1);
+            dyt = new Array(steps + 1);
+            vxs = new Array(steps + 1);
+            vys = new Array(steps + 1);
+            vs = new Array(steps + 1);
+            times = new Array(steps + 1);
+            wgCum = new Array(steps + 1);
+            wdCum = new Array(steps + 1);
+            ecArr = new Array(steps + 1);
+            epArr = new Array(steps + 1);
+            etArr = new Array(steps + 1);
+            fxArr = new Array(steps + 1);
+            fyArr = new Array(steps + 1);
+            
+            // Crear trayectoria
+            const traj = document.getElementById('trajectory').value;
+            for (let i = 0; i <= steps; i++) {
+                const s = i / steps;
+                const p = pathAt(s, traj);
+                xs[i] = p[0];
+                ys[i] = p[1];
+                times[i] = s * totalTime;
+            }
+            
+            // Calcular velocidades
+            for (let i = 0; i < steps; i++) {
+                dxt[i] = xs[i+1] - xs[i];
+                dyt[i] = ys[i+1] - ys[i];
+                const dt = times[i+1] - times[i];
+                vxs[i] = dxt[i] / dt;
+                vys[i] = dyt[i] / dt;
+                vs[i] = Math.hypot(vxs[i], vys[i]);
+            }
+            dxt[steps] = dxt[steps-1];
+            dyt[steps] = dyt[steps-1];
+            vxs[steps] = vxs[steps-1];
+            vys[steps] = vys[steps-1];
+            vs[steps] = vs[steps-1];
+            
+            // Calcular trabajos y energías
+            let wgAcc = 0, wdAcc = 0;
+            for (let i = 0; i <= steps; i++) {
+                const fxg = 0;
+                const fyg = -mass * g;
+                fxArr[i] = fxg;
+                fyArr[i] = fyg;
+                
+                if (i > 0) {
+                    const deltaWg = fxg * dxt[i-1] + fyg * dyt[i-1];
+                    wgAcc += deltaWg;
+                    
+                    const v = vs[i-1];
+                    if (v > 1e-12) {
+                        const tx = vxs[i-1] / v;
+                        const ty = vys[i-1] / v;
+                        const fdx = -b * v * tx;
+                        const fdy = -b * v * ty;
+                        const deltaWd = fdx * dxt[i-1] + fdy * dyt[i-1];
+                        wdAcc += deltaWd;
+                        fxArr[i] += fdx;
+                        fyArr[i] += fdy;
+                    }
+                }
+                
+                wgCum[i] = wgAcc;
+                wdCum[i] = wdAcc;
+                
+                const vnow = vs[i];
+                const ec = 0.5 * mass * vnow * vnow;
+                const ep = mass * g * ys[i];
+                ecArr[i] = ec;
+                epArr[i] = ep;
+                etArr[i] = ec + ep;
+            }
+            
+            idx = 0;
+            updateToIndex(0);
+            drawScene();
+            
+            alert('✓ Simulación preparada con éxito!\nTrayectoria: ' + traj + '\nPasos: ' + steps);
+        }
+        
+        function pathAt(s, traj) {
+            if (traj === 'recta') {
+                const x = xA + s * (xB - xA);
+                const y = yA + s * (yB - yA);
+                return [x, y];
+            } else if (traj === 'arco') {
+                const xm = 0.5 * (xA + xB);
+                const ym = 0.5 * (yA + yB) + Math.max(2, Math.abs(xB - xA) / 4);
+                const rx = xA - xm;
+                const ry = yA - ym;
+                const r = Math.hypot(rx, ry);
+                let theta0 = Math.atan2(ry, rx);
+                let theta1 = Math.atan2(yB - ym, xB - xm);
+                if (theta1 < theta0) theta1 += 2 * Math.PI;
+                const theta = theta0 + s * (theta1 - theta0);
+                const x = xm + r * Math.cos(theta);
+                const y = ym + r * Math.sin(theta);
+                return [x, y];
+            } else { // parábola
+                const x = xA + s * (xB - xA);
+                const xm = 0.5 * (xA + xB);
+                const ymax = Math.max(yA, yB) + Math.max(2, Math.abs(xB - xA) / 3);
+                const abc = solve3x3(
+                    [[xA*xA, xA, 1], [xm*xm, xm, 1], [xB*xB, xB, 1]],
+                    [yA, ymax, yB]
+                );
+                const y = abc[0]*x*x + abc[1]*x + abc[2];
+                return [x, y];
+            }
+        }
+        
+        function solve3x3(M, b) {
+            const a11=M[0][0], a12=M[0][1], a13=M[0][2];
+            const a21=M[1][0], a22=M[1][1], a23=M[1][2];
+            const a31=M[2][0], a32=M[2][1], a33=M[2][2];
+            const D = a11*(a22*a33 - a23*a32) - a12*(a21*a33 - a23*a31) + a13*(a21*a32 - a22*a31);
+            if (Math.abs(D) < 1e-12) return [0,0,0];
+            const D1 = b[0]*(a22*a33 - a23*a32) - a12*(b[1]*a33 - a23*b[2]) + a13*(b[1]*a32 - a22*b[2]);
+            const D2 = a11*(b[1]*a33 - a23*b[2]) - b[0]*(a21*a33 - a23*a31) + a13*(a21*b[2] - b[1]*a31);
+            const D3 = a11*(a22*b[2] - b[1]*a32) - a12*(a21*b[2] - b[1]*a31) + b[0]*(a21*a32 - a22*a31);
+            return [D1/D, D2/D, D3/D];
+        }
+        
+        function updateToIndex(k) {
+            if (k < 0) k = 0;
+            if (k > steps) k = steps;
+            
+            // Actualizar gráficas
+            const timeData = times.slice(0, k+1);
+            
+            energyChart.data.labels = timeData.map(t => t.toFixed(2));
+            energyChart.data.datasets[0].data = ecArr.slice(0, k+1);
+            energyChart.data.datasets[1].data = epArr.slice(0, k+1);
+            energyChart.data.datasets[2].data = etArr.slice(0, k+1);
+            energyChart.update('none');
+            
+            workChart.data.labels = timeData.map(t => t.toFixed(2));
+            workChart.data.datasets[0].data = wgCum.slice(0, k+1);
+            workChart.data.datasets[1].data = wdCum.slice(0, k+1);
+            workChart.data.datasets[2].data = wgCum.slice(0, k+1).map((wg, i) => wg + wdCum[i]);
+            workChart.update('none');
+            
+            // Actualizar barras de energía
+            if (k > 0) {
+                const maxE = etArr[0];
+                document.getElementById('ecBar').style.width = Math.min(100, (ecArr[k] / maxE) * 100) + '%';
+                document.getElementById('epBar').style.width = Math.min(100, (epArr[k] / maxE) * 100) + '%';
+                document.getElementById('etBar').style.width = Math.min(100, (etArr[k] / maxE) * 100) + '%';
+                document.getElementById('ecValue').textContent = ecArr[k].toFixed(2) + ' J';
+                document.getElementById('epValue').textContent = epArr[k].toFixed(2) + ' J';
+                document.getElementById('etValue').textContent = etArr[k].toFixed(2) + ' J';
+            }
+        }
+        
+        function drawScene() {
+            if (!ctx) return;
+            
+            // Limpiar
+            ctx.fillStyle = '#e8f4f8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Cuadrícula
+            if (showGrid) {
+                ctx.strokeStyle = '#ccc';
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i <= 20; i++) {
+                    const x = offsetX + i * scaleX;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let j = 0; j <= 15; j++) {
+                    const y = offsetY + j * scaleY;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // Suelo
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 30);
+            ctx.lineTo(canvas.width, canvas.height - 30);
+            ctx.stroke();
+            
+            if (!xs || idx < 0) return;
+            
+            // Trayectoria completa (línea punteada)
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            for (let i = 0; i < steps; i++) {
+                const x1 = offsetX + xs[i] * scaleX;
+                const y1 = canvas.height - offsetY - ys[i] * scaleY;
+                if (i === 0) ctx.moveTo(x1, y1);
+                else ctx.lineTo(x1, y1);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Punto A
+            const xAscr = offsetX + xA * scaleX;
+            const yAscr = canvas.height - offsetY - yA * scaleY;
+            ctx.fillStyle = '#4CAF50';
+            ctx.beginPath();
+            ctx.arc(xAscr, yAscr, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.font = '12px Arial';
+            ctx.fillText('A (inicio)', xAscr + 12, yAscr);
+            
+            // Punto B
+            const xBscr = offsetX + xB * scaleX;
+            const yBscr = canvas.height - offsetY - yB * scaleY;
+            ctx.fillStyle = '#f44336';
+            ctx.beginPath();
+            ctx.arc(xBscr, yBscr, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.fillText('B (final)', xBscr + 12, yBscr);
+            
+            // Objeto (pelota) en posición actual
+            if (idx <= steps) {
+                const xCurr = xs[idx];
+                const yCurr = ys[idx];
+                const xScr = offsetX + xCurr * scaleX;
+                const yScr = canvas.height - offsetY - yCurr * scaleY;
+                
+                // Sombra
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(xScr, yScr + 20, 18, 5, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Pelota
+                const gradient = ctx.createRadialGradient(xScr - 5, yScr - 5, 2, xScr, yScr, 15);
+                gradient.addColorStop(0, '#ff9999');
+                gradient.addColorStop(1, '#ff6464');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(xScr, yScr, 15, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Vectores de fuerza
+                if (showVectors && idx > 0) {
+                    const scale = 5;
+                    
+                    // Vector velocidad (azul)
+                    const vx = vxs[idx];
+                    const vy = vys[idx];
+                    ctx.strokeStyle = '#2196F3';
+                    ctx.lineWidth = 3;
+                    drawArrow(ctx, xScr, yScr, xScr + vx * scale, yScr - vy * scale);
+                    ctx.fillStyle = '#2196F3';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillText('v', xScr + vx * scale + 5, yScr - vy * scale);
+                    
+                    // Vector fuerza (rojo)
+                    const fx = fxArr[idx];
+                    const fy = fyArr[idx];
+                    ctx.strokeStyle = '#f44336';
+                    ctx.lineWidth = 3;
+                    drawArrow(ctx, xScr, yScr, xScr + fx * scale / 2, yScr - fy * scale / 2);
+                    ctx.fillStyle = '#f44336';
+                    ctx.fillText('F', xScr + fx * scale / 2 + 5, yScr - fy * scale / 2);
+                }
+                
+                // Información en pantalla
+                ctx.fillStyle = '#000';
+                ctx.font = '14px Arial';
+                ctx.fillText('Tiempo: ' + times[idx].toFixed(2) + ' s', 10, 20);
+                ctx.fillText('Posición: (' + xCurr.toFixed(2) + ', ' + yCurr.toFixed(2) + ') m', 10, 40);
+                ctx.fillText('Velocidad: ' + vs[idx].toFixed(2) + ' m/s', 10, 60);
+                ctx.fillText('Masa: ' + mass.toFixed(2) + ' kg', 10, 80);
+            }
+        }
+        
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowLength = 10;
+            const arrowAngle = Math.PI / 6;
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - arrowLength * Math.cos(angle - arrowAngle), 
+                       y2 - arrowLength * Math.sin(angle - arrowAngle));
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - arrowLength * Math.cos(angle + arrowAngle), 
+                       y2 - arrowLength * Math.sin(angle + arrowAngle));
+            ctx.stroke();
+        }
+        
+        function startSim() {
+            if (!running && xs) {
+                running = true;
+                lastTime = performance.now();
+                animate();
+            }
+        }
+        
+        function pauseSim() {
+            running = false;
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        }
+        
+        function animate(currentTime) {
+            if (!running) return;
+            
+            const elapsed = currentTime - lastTime;
+            if (elapsed >= 16 / animSpeed) { // ~60 FPS ajustado
+                lastTime = currentTime;
+                
+                if (idx < steps) {
+                    idx++;
+                    updateToIndex(idx);
+                    drawScene();
+                } else {
+                    pauseSim();
+                }
+            }
+            
+            animationFrame = requestAnimationFrame(animate);
+        }
+        
+        function exportCSV() {
+            if (!xs) {
+                alert('Primero debes preparar la simulación');
+                return;
+            }
+            
+            let csv = 't(s),s,x(m),y(m),vx(m/s),vy(m/s),v(m/s),Wg(J),Wd(J),Ec(J),Ep(J),Et(J),Fx(N),Fy(N)\n';
+            
+            for (let i = 0; i <= idx; i++) {
+                const s = i / steps;
+                csv += times[i].toFixed(6) + ',' +
+                       s.toFixed(6) + ',' +
+                       xs[i].toFixed(6) + ',' +
+                       ys[i].toFixed(6) + ',' +
+                       vxs[i].toFixed(6) + ',' +
+                       vys[i].toFixed(6) + ',' +
+                       vs[i].toFixed(6) + ',' +
+                       wgCum[i].toFixed(6) + ',' +
+                       wdCum[i].toFixed(6) + ',' +
+                       ecArr[i].toFixed(6) + ',' +
+                       epArr[i].toFixed(6) + ',' +
+                       etArr[i].toFixed(6) + ',' +
+                       fxArr[i].toFixed(6) + ',' +
+                       fyArr[i].toFixed(6) + '\n';
+            }
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'trabajo_energia_datos.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            alert('✓ Archivo CSV descargado exitosamente!');
+        }
+    </script>
+</body>
+</html>
